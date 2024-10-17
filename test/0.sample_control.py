@@ -1,4 +1,5 @@
 """
+公式のサンプルプログラム
 実行後, エンドエフェクタ近くの赤いキューブをダブルクリック
 ctrl+右クリック → 位置移動
 ctrl+左クリック → 回転
@@ -74,7 +75,9 @@ if __name__ == "__main__":
             # Update task target.
             T_wt = mink.SE3.from_mocap_name(model, data, "target")
             print(T_wt)
-            print(data.qpos)
+            # print(data.qpos)
+            end_pos=data.site("attachment_site").xpos
+            print(end_pos)
             # print(mink.SE3.as_matrix(T_wt))
             end_effector_task.set_target(T_wt) #ここでSE3型のクォータニオンとxyz座標を与えるだけ
 

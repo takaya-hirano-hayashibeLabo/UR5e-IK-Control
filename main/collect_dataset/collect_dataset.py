@@ -1,6 +1,6 @@
 """
 ロボットの関節角度と目標軌道のペアをデータセットとして集めるスクリプト  
-集めたデータで教師あり学習するだけ
+あとは集めたデータで教師あり学習するだけ
 """
 
 from pathlib import Path
@@ -22,7 +22,7 @@ _XML = _ROOT / "model" / "scene.xml"
 import sys
 sys.path.append(str(_ROOT))
 from src.utils import np2SE3_target
-from src.trajectory_generator import generate_eight_trajectory
+from src.trajectory_generator import generate_trajectory
 
 
 def main():
@@ -36,18 +36,9 @@ def main():
         config = yaml.safe_load(file)
 
     # >> 軌道生成 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    trajectory_config = config['trajectory']
-    origin = tuple(trajectory_config['origin'])
-    max_distance = tuple(trajectory_config['max_distance'])
-    angle = trajectory_config['angle']
-    num_loops = trajectory_config['num_loops']
-    loop_duration = trajectory_config['loop_duration']
+    trajectory_config=config["trajectory"]
     delta_time = trajectory_config['delta_time']
-    noise_std=trajectory_config["noise_std"]
-    trajectory = generate_eight_trajectory(
-        origin, max_distance, num_loops, 
-        loop_duration, delta_time,angle,noise_std
-    )
+    trajectory = generate_trajectory(trajectory_config)
 
     _,target_x,target_y=trajectory.pop(0)
     T_wt=np2SE3_target( #初期座標
@@ -132,13 +123,15 @@ def main():
                     position=np.array([target_x,target_y,target_z])
                 )
                 elapsed_t_from_set_target=0.0 #経過時間をリセット
-                print(T_wt)
+                # print(T_wt)
 
                 datasets.append(( #ロボットの状態と目標軌道を記録
                     target_t,
                     *data.qpos, #各関節の角度
+                    *data.site("attachment_site").xpos, #エンドエフェクタの位置
                     target_x,target_y,target_z, #目標の手先位置
                 ))
+                print(f"endpos:{data.site('attachment_site').xpos[:-1]}, target:{target_x,target_y}")
             # <<目標位置と姿勢を指定する<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 
@@ -158,7 +151,7 @@ def main():
 
             # Visualize at fixed FPS.
             viewer.sync()
-            rate.sleep()
+            # rate.sleep() #現実時間とシミュレータ時間をあわせる    
 
 
     datasets_db=pd.DataFrame(
@@ -166,6 +159,7 @@ def main():
         columns=[
             "time",
             *[f"joint{i}" for i in range(6)],
+            *[f"endpos_{label}" for label in ["x","y","z"]],
             "target_x","target_y","target_z"
         ]
     )

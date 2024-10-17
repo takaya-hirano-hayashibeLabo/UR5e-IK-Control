@@ -31,7 +31,7 @@ def np2SE3_target(quaternion:np.ndarray,position:np.ndarray):
     :param position: [x,y,z]
     :return: 4x4 transformation matrix
     """
-    t_matrix = transform_matrix(quaternion, position)
+    t_matrix = transform_matrix(np.array(quaternion), np.array(position))
     target=mink.SE3.from_matrix(t_matrix)
     
     return target

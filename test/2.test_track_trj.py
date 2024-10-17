@@ -1,5 +1,5 @@
 """
-生成した軌道に沿ってロボットアームを動かすサンプル
+生成した8の字軌道に沿ってロボットアームを動かすサンプル
 """
 
 from pathlib import Path
@@ -69,7 +69,7 @@ if __name__ == "__main__":
     num_loops = 5
     loop_duration = 10.0  # 1つの軌道を描く時間 [s]
     delta_time = 0.01 #目標軌道の更新周期
-    noise_std=0.0005
+    noise_std=-1
     trajectory = generate_eight_trajectory(origin, max_distance, num_loops, loop_duration, delta_time,angle,noise_std)
 
     _,target_x,target_y=trajectory.pop(0)
@@ -101,8 +101,8 @@ if __name__ == "__main__":
             if elapsed_t_from_set_target>delta_time: #制御周期と目標軌道周期は違う
                 _,target_x,target_y=trajectory.pop(0)
                 T_wt=np2SE3_target(
-                    quaternion=np.array([1,0,0,0]),
-                    position=np.array([target_x,target_y,0.3])
+                    quaternion=[1,0,0,0],
+                    position=[target_x,target_y,0.3]
                 )
                 elapsed_t_from_set_target=0.0 #経過時間をリセット
                 print(T_wt)
