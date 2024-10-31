@@ -1,6 +1,6 @@
 """
 dynamic forwadで軌道速度を変えてみる
-入出力はエンドエフェクタの座標
+入力を関節角度にする
 """
 
 from pathlib import Path
@@ -29,8 +29,14 @@ from DynamicSNN.src.utils import load_yaml,load_json2dict
 
 if __name__ == "__main__":
 
-    nn_modelpath=_ROOT.parent/"DynamicSNN/train-trajectory/output/20241017/dynasnn_eight_fig_ideal"
-    trj_datapath=_ROOT/"main/collect_dataset/20241017/eight_figure_ideal/output/datasets.csv"
+    nn_modelpath=_ROOT.parent/"DynamicSNN/train-trajectory/output/20241024/circle_beta0.8_identity_noise0.05"
+    trj_datapath=_ROOT/"main/collect_dataset/20241024/circle/output/datasets.csv"
+
+    # nn_modelpath=_ROOT.parent/"DynamicSNN/train-trajectory/output/20241024/ellipse_small_noise0.01"
+    # trj_datapath=_ROOT/"main/collect_dataset/20241024/ellipse_small/output/datasets.csv"
+
+    # nn_modelpath=_ROOT.parent/"DynamicSNN/train-trajectory/output/20241024/eight_figure_noise0.005"
+    # trj_datapath=_ROOT/"main/collect_dataset/20241024/eight_figure/output/datasets.csv"
 
     nn_conf=load_yaml(nn_modelpath/"conf.yml")
     time_enc=DynamicSNN(conf=nn_conf["model"])
@@ -44,6 +50,7 @@ if __name__ == "__main__":
     nn_model=ContinuousSNN(
         nn_conf["output-model"],time_encoder=time_enc
     )
+    print(nn_model)
 
     weights=torch.load(
         nn_modelpath/"result/models/model_best.pth",
@@ -52,7 +59,7 @@ if __name__ == "__main__":
     nn_model.load_state_dict(weights)
     nn_model.eval()
 
-    sequence=50#nn_conf["train"]["sequence"]
+    sequence=100#nn_conf["train"]["sequence"]
 
     # # nn_modelの最終層の重みを取得して表示
     # nn_model_weights = list(nn_model.time_encoder.parameters())[-1]
@@ -75,12 +82,13 @@ if __name__ == "__main__":
     #>> データの準備 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     datasets=pd.read_csv(trj_datapath)
     
-    input_labels=[f"endpos_{label}" for label in ["x","y"]]
+    input_labels=[f"joint{i}" for i in range(6)]
     input_datas=datasets[input_labels]
     input_max=input_datas.max()
     input_max.name="max"
     input_min=input_datas.min()
     input_min.name="min"
+    input_datas=input_datas.values
 
     target_datas=datasets[["target_x","target_y"]]
     if nn_conf["output-model"]["out-type"].casefold()=="velocity":
@@ -92,9 +100,12 @@ if __name__ == "__main__":
     target_min=target_datas.min()
     target_min.name="min"
 
-    n_head=100#sequence
+    target_positions=datasets[["target_x","target_y"]].values[1:] #目標位置座標
+
+    n_head=int(1.0*sequence)
     in_trajectory=[]
     time_scales=[]
+    endeffector_target_trajectory=[]
     #>> データの準備 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
@@ -157,7 +168,7 @@ if __name__ == "__main__":
             run_count=0
             delta_time=0.07
             elapsed_time=delta_time
-            timescale=1.
+            timescale=0.3
             while viewer.is_running():
 
 
@@ -168,8 +179,10 @@ if __name__ == "__main__":
                     elapsed_time=0.0 #経過時間のリセット
 
                     if run_count<n_head:
-                        in_trajectory.append(input_datas.values[run_count])
+                        in_trajectory.append(list(data.qpos))
+                        # in_trajectory.append(input_datas[run_count])
                         time_scales.append(1.0)
+                        endeffector_target_trajectory.append(target_positions[run_count])
                     else:                        
                         in_x=np.array(in_trajectory)[-sequence:] if len(in_trajectory)>sequence else np.array(in_trajectory)
                         in_x=2*(in_x-input_min.values)/(input_max.values-input_min.values)-1
@@ -182,15 +195,20 @@ if __name__ == "__main__":
                                 in_spike.flatten(start_dim=2), torch.Tensor(in_scales)
                             )[0,-1].to("cpu").detach().numpy()
                         out=0.5*(out_nrm+1)*(target_max.values-target_min.values)+target_min.values
-                        print(f"out nrm: {out_nrm}, out: {out}")
+                        print(f"runcount: {run_count}, out nrm: {out_nrm}, out: {out}, in_spike count: {in_spike[0][-1].sum()}")
 
-                        next_state=in_trajectory[-1]+out/timescale #差分を足し合わせる
-                        in_trajectory.append(next_state)
+                        # next_target=target_positions[run_count]#endeffector_target_trajectory[-1]+out/timescale #理想軌道
+                        # next_target=endeffector_target_trajectory[-1]+out/timescale #差分を足し合わせる
+                        next_target=np.array(data.site("attachment_site").xpos)[:-1]+out/timescale #現在位置に差分を足し合わせる
+                        in_trajectory.append(list(data.qpos))
+                        # in_trajectory.append(input_datas[run_count])
                         time_scales.append(timescale)
+                        # time_scales.append(1.0)
+                        endeffector_target_trajectory.append(next_target)
                         # time_scales.append(1.0)
                         
 
-                    target_x,target_y=in_trajectory[-1]
+                    target_x,target_y=endeffector_target_trajectory[-1]
                     run_count+=1
                 #<< 目標軌道の推定 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -221,7 +239,7 @@ if __name__ == "__main__":
             
     finally:
         trajectory=pd.DataFrame(
-            np.concatenate([np.array(in_trajectory),np.array(time_scales).reshape(-1,1)],axis=1),
-            columns=["target_x","target_y","timescale"]
+            np.concatenate([np.array(time_scales).reshape(-1,1),np.array(in_trajectory),np.array(endeffector_target_trajectory)],axis=1),
+            columns=["timescale",*input_labels,"target_x","target_y"]
         )
         trajectory.to_csv(nn_modelpath/f"dynamic_trajectory_timescale{timescale:.2f}.csv")

@@ -1,0 +1,17 @@
+args:
+    configpath: conf.yml
+    saveto: 20241031_output
+    timescale: 7.0
+config:
+    angle: 1.5708
+    delta_time: 0.07
+    loop_duration: 35.0
+    noise_std: -1
+    num_loops: 50
+    origin:
+    - 0.5
+    - 0
+    semi_axes:
+    - 0.2
+    - 0.2
+    type: ellipse

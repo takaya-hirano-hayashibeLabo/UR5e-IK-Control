@@ -1,0 +1,3 @@
+configpath: conf.yml
+saveto: sample
+timescale: 1.0

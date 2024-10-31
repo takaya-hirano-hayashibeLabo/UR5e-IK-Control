@@ -2,6 +2,11 @@ import numpy as np
 import pandas as pd
 
 def generate_trajectory(config:dict):
+    """
+    open-closed原則に完全に反したコードだこれ...
+    というかopen-closedの説明するときに出てくる例そのものじゃねぇか
+    自分の実装力の低さが露呈している...orz
+    """
     trajectory_type = config["type"]
     origin = config.get("origin", (0, 0))
     num_loops = config.get("num_loops", 1)
@@ -160,41 +165,41 @@ def animate_trajectory(trajectory):
 
 if __name__=="__main__":
     # # 使用例
-    origin = (0.5, 0)
-    max_distance = (0.3, 0.2)
-    angle=np.pi/2
-    num_loops = 50
-    loop_duration = 5.0  # 1つの軌道を描く時間 [s]
-    delta_time = 0.07
-    noise_std=-1
-
-    trajectory = generate_eight_trajectory(
-        origin, max_distance, num_loops, loop_duration, 
-        delta_time,angle=angle,noise_std=noise_std
-    )
-    # animate_trajectory(trajectory)
-
-    # 使用例
     # origin = (0.5, 0)
-    # semi_axes = (0.3, 0.2)
+    # max_distance = (0.3, 0.2)
     # angle=np.pi/2
     # num_loops = 50
     # loop_duration = 5.0  # 1つの軌道を描く時間 [s]
     # delta_time = 0.07
     # noise_std=-1
 
-    # trajectory = generate_ellipse_trajectory(
-    #     origin, semi_axes, num_loops, loop_duration, 
+    # trajectory = generate_eight_trajectory(
+    #     origin, max_distance, num_loops, loop_duration, 
     #     delta_time,angle=angle,noise_std=noise_std
     # )
+    # animate_trajectory(trajectory)
 
-    trajectory_db=pd.DataFrame(
-        np.concatenate([np.array(trajectory)[:-1],np.array(trajectory)[1:,1:]],axis=1),
-        columns=["time","endpos_x","endpos_y","target_x","target_y"]
+    # 使用例
+    origin = (0.5, 0)
+    semi_axes = (0.3, 0.2)
+    angle=np.pi/2
+    num_loops = 50
+    loop_duration = 5.0  # 1つの軌道を描く時間 [s]
+    delta_time = 0.07
+    noise_std=0.05
+
+    trajectory = generate_ellipse_trajectory(
+        origin, semi_axes, num_loops, loop_duration, 
+        delta_time,angle=angle,noise_std=noise_std
     )
-    trajectory_db.to_csv(
-        "C:/Users/3meko/Dev/HayashibeLab/workspace/ur5e_ik_control/main/collect_dataset/20241017/eight_figure_ideal/output/datasets.csv",
-        index=False,
-    )
+
+    # trajectory_db=pd.DataFrame(
+    #     np.concatenate([np.array(trajectory)[:-1],np.array(trajectory)[1:,1:]],axis=1),
+    #     columns=["time","endpos_x","endpos_y","target_x","target_y"]
+    # )
+    # trajectory_db.to_csv(
+    #     "C:/Users/3meko/Dev/HayashibeLab/workspace/ur5e_ik_control/main/collect_dataset/20241017/eight_figure_ideal/output/datasets.csv",
+    #     index=False,
+    # )
 
     animate_trajectory(trajectory)
