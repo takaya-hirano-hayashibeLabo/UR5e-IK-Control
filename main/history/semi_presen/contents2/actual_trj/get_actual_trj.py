@@ -26,7 +26,7 @@ import pandas as pd
 import json
 from copy import deepcopy
 sys.path.append(str(_ROOT.parent)) #自作ライブラリも入れたい
-from DynamicSNN.src.model import DynamicSNN, ContinuousSNN, ThresholdEncoder
+from DynamicSNN.src.model import DynamicSNN, ContinuousSNN, ThresholdEncoder, SNN
 from DynamicSNN.src.utils import load_yaml,load_json2dict
 
 if __name__ == "__main__":
@@ -45,7 +45,11 @@ if __name__ == "__main__":
 
 
     nn_conf=load_yaml(nn_modelpath/"conf.yml")
-    time_enc=DynamicSNN(conf=nn_conf["model"])
+
+    if nn_conf["model"]["type"].casefold()=="snn":
+        time_enc=SNN(conf=nn_conf["model"])
+    else:
+        time_enc=DynamicSNN(conf=nn_conf["model"])
     time_enc.eval()
 
     # # time_encの最終層の重みを取得して表示
@@ -208,9 +212,12 @@ if __name__ == "__main__":
                         in_scales=np.array(time_scales)[-sequence:] if len(time_scales)>sequence else np.array(time_scales)
 
                         with torch.no_grad():
-                            out_nrm=nn_model.dynamic_forward_given_scale(
-                                in_spike.flatten(start_dim=2), torch.Tensor(in_scales)
-                            )[0,-1].to("cpu").detach().numpy()
+                            if nn_conf["model"]["type"].casefold()=="snn":
+                                out_nrm=nn_model.forward(in_spike.flatten(start_dim=2))[0,-1].to("cpu").detach().numpy()
+                            elif nn_conf["model"]["type"].casefold()=="dynasnn":
+                                out_nrm=nn_model.dynamic_forward_given_scale(
+                                    in_spike.flatten(start_dim=2), torch.Tensor(in_scales)
+                                )[0,-1].to("cpu").detach().numpy()
                         out=0.5*(out_nrm+1)*(target_max.values-target_min.values)+target_min.values
                         print(f"runcount: {run_count}, out nrm: {out_nrm}, out: {out}, in_spike count: {in_spike[0][-1].sum()}")
 

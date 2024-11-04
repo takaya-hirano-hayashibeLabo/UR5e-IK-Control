@@ -36,3 +36,49 @@ def np2SE3_target(quaternion:np.ndarray,position:np.ndarray):
     
     return target
 
+
+def save_video(frames, output_path, file_name, fps=30, scale=5, frame_label_view=True):
+    """
+    :param frames: 動画のリスト [t x h x w x c]
+    :param output_path: 出力パス
+    :param file_name: ファイル名
+    :param fps: フレームレート
+    :param scale: スケール
+    :param frame_label_view: フレームラベル表示
+    """
+    import cv2
+    import subprocess
+    import os
+
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+
+    frames=np.array(frames)
+    height, width,channel = frames[0].shape
+    new_height, new_width = int(height * scale), int(width * scale)
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    tmpout = str(output_path / "tmp.avi")
+    video = cv2.VideoWriter(tmpout, fourcc, fps, (new_width, new_height), isColor=True)
+
+    for i, frame in enumerate(frames):
+        # Normalize frame to range [0, 255] with original range [-1, 1]
+        resized_frame = cv2.resize(frame.astype(np.uint8), (new_width, new_height))
+
+        # Add frame number text
+        if frame_label_view:
+            cv2.putText(resized_frame, f"Frame: {i+1}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+
+        video.write(resized_frame)
+
+    video.release()
+
+    # Re-encode the video using ffmpeg
+    file_name = file_name + ".mp4" if not ".mp4" in file_name else file_name
+    ffmpeg_command = [
+        'ffmpeg', '-y', '-i', tmpout,
+        '-pix_fmt', 'yuv420p', '-vcodec', 'libx264',
+        '-crf', '23', '-preset', 'medium', str(output_path / file_name)
+    ]
+    subprocess.run(ffmpeg_command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    # Remove the temporary file
+    os.remove(tmpout)

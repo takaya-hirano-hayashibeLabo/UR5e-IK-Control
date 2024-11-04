@@ -181,12 +181,12 @@ if __name__=="__main__":
 
     # 使用例
     origin = (0.5, 0)
-    semi_axes = (0.3, 0.2)
+    semi_axes = (0.15, 0.15)
     angle=np.pi/2
     num_loops = 50
     loop_duration = 5.0  # 1つの軌道を描く時間 [s]
-    delta_time = 0.07
-    noise_std=0.05
+    delta_time = 0.03
+    noise_std=-1
 
     trajectory = generate_ellipse_trajectory(
         origin, semi_axes, num_loops, loop_duration, 

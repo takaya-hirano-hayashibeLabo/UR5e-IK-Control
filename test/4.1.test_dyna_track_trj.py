@@ -29,8 +29,8 @@ from DynamicSNN.src.utils import load_yaml,load_json2dict
 
 if __name__ == "__main__":
 
-    nn_modelpath=_ROOT.parent/"DynamicSNN/train-trajectory/output/20241024/circle_beta0.8_identity_noise0.05"
-    trj_datapath=_ROOT/"main/collect_dataset/20241024/circle/output/datasets.csv"
+    nn_modelpath=_ROOT.parent/"DynamicSNN/train-trajectory/output/20241104/circle/dynasnn"
+    trj_datapath=_ROOT/"main/collect_dataset/20241104/circle/output/datasets.csv"
 
     # nn_modelpath=_ROOT.parent/"DynamicSNN/train-trajectory/output/20241024/ellipse_small_noise0.01"
     # trj_datapath=_ROOT/"main/collect_dataset/20241024/ellipse_small/output/datasets.csv"
@@ -166,9 +166,9 @@ if __name__ == "__main__":
 
             rate = RateLimiter(frequency=500.0, warn=False)
             run_count=0
-            delta_time=0.07
+            delta_time=0.03
             elapsed_time=delta_time
-            timescale=0.3
+            timescale=0.5
             while viewer.is_running():
 
 
@@ -200,6 +200,7 @@ if __name__ == "__main__":
                         # next_target=target_positions[run_count]#endeffector_target_trajectory[-1]+out/timescale #理想軌道
                         # next_target=endeffector_target_trajectory[-1]+out/timescale #差分を足し合わせる
                         next_target=np.array(data.site("attachment_site").xpos)[:-1]+out/timescale #現在位置に差分を足し合わせる
+                        # next_target=np.array(data.site("attachment_site").xpos)[:-1]+out #現在位置に差分を足し合わせる
                         in_trajectory.append(list(data.qpos))
                         # in_trajectory.append(input_datas[run_count])
                         time_scales.append(timescale)

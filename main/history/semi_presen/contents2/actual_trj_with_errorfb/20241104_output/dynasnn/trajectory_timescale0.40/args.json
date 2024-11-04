@@ -1,0 +1,85 @@
+{
+    "args": {
+        "modelpath": "C:\\Users\\3meko\\Dev\\HayashibeLab\\workspace\\DynamicSNN\\train-trajectory\\output\\20241024\\circle_beta0.8_identity_noise0.05",
+        "trjpath": "C:\\Users\\3meko\\Dev\\HayashibeLab\\workspace\\ur5e_ik_control\\main\\collect_dataset\\20241024\\circle\\output\\datasets.csv",
+        "kfb": 0.05,
+        "timescale": 0.4,
+        "deltatime": 0.07,
+        "nloop": 10,
+        "saveto": "20241104_output/dynasnn"
+    },
+    "nn_conf": {
+        "train": {
+            "batch": 64,
+            "epoch": 200,
+            "iter": -1,
+            "lr": 0.001,
+            "save_interval": 100,
+            "datatype": "ur5e",
+            "datapath": "original-data/UR5e/20241024/circle/output/datasets.csv",
+            "sequence": 100,
+            "timescales": [
+                1.0
+            ],
+            "schedule-step": -1,
+            "schedule-rate": 0.5
+        },
+        "model": {
+            "type": "dynamic-snn",
+            "in-size": 1200,
+            "hiddens": [
+                512,
+                256,
+                128
+            ],
+            "out-size": 128,
+            "clip-norm": 1.0,
+            "dropout": 0.2,
+            "dt": 0.07,
+            "init-tau": 0.35,
+            "min-tau": 0.07,
+            "v-threshold": 0.25,
+            "v-rest": 0.0,
+            "reset-mechanism": "zero",
+            "spike-grad": "fast-sigmoid",
+            "output-membrane": true,
+            "reset-outmem": false
+        },
+        "output-model": {
+            "out-type": "velocity",
+            "in-size": 128,
+            "hiddens": [
+                64,
+                64
+            ],
+            "out-size": 2,
+            "dropout": 0.2,
+            "clip-norm": 1.0,
+            "out-actf": "identity"
+        },
+        "encoder": {
+            "type": "THR",
+            "resolution": 200,
+            "thr-max": 1.1,
+            "thr-min": -1.1
+        }
+    },
+    "trj_conf": {
+        "trajectory": {
+            "type": "ellipse",
+            "origin": [
+                0.5,
+                0
+            ],
+            "semi_axes": [
+                0.2,
+                0.2
+            ],
+            "angle": 1.5708,
+            "num_loops": 50,
+            "loop_duration": 5,
+            "delta_time": 0.07,
+            "noise_std": -1
+        }
+    }
+}
